@@ -45,6 +45,28 @@ export const menuService = {
     }
   },
 
+  async addItem(data: Omit<MenuItem, 'id'>): Promise<string> {
+    try {
+      const docRef = await addDoc(collection(db, MENU_COLLECTION), {
+        ...data,
+        updatedAt: serverTimestamp()
+      });
+      return docRef.id;
+    } catch (error) {
+      console.error('Error adding menu item:', error);
+      throw error;
+    }
+  },
+
+  async deleteItem(id: string): Promise<void> {
+    try {
+      await deleteDoc(doc(db, MENU_COLLECTION, id));
+    } catch (error) {
+      console.error('Error deleting menu item:', error);
+      throw error;
+    }
+  },
+
   async seedData(): Promise<void> {
     try {
       const snapshot = await getDocs(collection(db, MENU_COLLECTION));

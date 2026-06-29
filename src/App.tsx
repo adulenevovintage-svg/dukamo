@@ -12,7 +12,9 @@ import {
   ShoppingBag, 
   Calculator,
   ArrowRight,
-  Heart
+  Heart,
+  Plus,
+  Settings
 } from 'lucide-react';
 
 import { CategoryType, MenuItem, BasketItem } from './types';
@@ -57,6 +59,7 @@ export default function App() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [isAdminLoginOpen, setIsAdminLoginOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<MenuItem | null>(null);
+  const [isAddingItem, setIsAddingItem] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
   const menuRef = useRef<HTMLElement>(null);
@@ -78,14 +81,20 @@ export default function App() {
     initData();
   }, []);
 
-  const handleUpdateItem = async (id: string, updates: Partial<MenuItem>) => {
+  const handleUpdateItem = async (id: string | null, updates: Partial<MenuItem>) => {
     try {
-      await menuService.updateItem(id, updates);
-      // Update local state
-      setMenuItems(prev => prev.map(item => item.id === id ? { ...item, ...updates } : item));
-      showToast('Item updated successfully');
+      if (id) {
+        await menuService.updateItem(id, updates);
+        // Update local state
+        setMenuItems(prev => prev.map(item => item.id === id ? { ...item, ...updates } : item));
+        showToast('Item updated successfully');
+      } else {
+        const newId = await menuService.addItem(updates as Omit<MenuItem, 'id'>);
+        setMenuItems(prev => [{ id: newId, ...updates } as MenuItem, ...prev]);
+        showToast('New item added successfully');
+      }
     } catch (error) {
-      showToast('Error updating item');
+      showToast(id ? 'Error updating item' : 'Error adding item');
       throw error;
     }
   };
@@ -337,6 +346,31 @@ export default function App() {
         )}
 
         {/* Dynamic Category Render Layout */}
+        {isAdmin && (
+          <motion.div 
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="flex items-center justify-between p-4 bg-white/60 backdrop-blur-md border border-[#8C6239]/20 rounded-2xl shadow-sm"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 bg-[#8C6239]/10 rounded-full flex items-center justify-center text-[#8C6239]">
+                <Settings className="w-4 h-4 animate-spin-slow" />
+              </div>
+              <div>
+                <p className="text-[10px] font-mono uppercase tracking-widest text-[#8C6239] font-bold">Admin Controls</p>
+                <p className="text-xs text-[#5C4E43] font-medium italic">Menu Editor Active</p>
+              </div>
+            </div>
+            <button
+              onClick={() => setIsAddingItem(true)}
+              className="flex items-center gap-2 px-4 py-2.5 bg-[#8C6239] hover:bg-[#704E2D] text-white rounded-xl text-[10px] font-bold uppercase tracking-widest shadow-lg transition-all active:scale-95"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>Add New Food</span>
+            </button>
+          </motion.div>
+        )}
+
         <motion.div 
           key={activeCategory}
           initial={{ opacity: 0, y: 15 }}
@@ -796,11 +830,14 @@ export default function App() {
       </AnimatePresence>
 
       <AnimatePresence>
-        {editingItem && (
+        {(editingItem || isAddingItem) && (
           <AdminEditModal
-            item={editingItem}
+            item={editingItem || undefined}
             onSave={handleUpdateItem}
-            onClose={() => setEditingItem(null)}
+            onClose={() => {
+              setEditingItem(null);
+              setIsAddingItem(false);
+            }}
           />
         )}
       </AnimatePresence>

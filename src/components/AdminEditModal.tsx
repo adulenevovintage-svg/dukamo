@@ -4,20 +4,22 @@ import { X, Save, Image, Tag, DollarSign, List, AlignLeft } from 'lucide-react';
 import { MenuItem } from '../types';
 
 interface AdminEditModalProps {
-  item: MenuItem;
+  item?: MenuItem; // Optional for "Add" mode
   onClose: () => void;
-  onSave: (id: string, updates: Partial<MenuItem>) => Promise<void>;
+  onSave: (id: string | null, updates: Partial<MenuItem>) => Promise<void>;
 }
 
 export default function AdminEditModal({ item, onClose, onSave }: AdminEditModalProps) {
+  const isAddMode = !item;
+  
   const [formData, setFormData] = useState({
-    name: item.name,
-    price: String(item.price),
-    ingredients: item.ingredients || '',
-    description: item.description || '',
-    image: item.image || '',
-    category: item.category,
-    isSpecialty: item.isSpecialty || false
+    name: item?.name || '',
+    price: item ? String(item.price) : '',
+    ingredients: item?.ingredients || '',
+    description: item?.description || '',
+    image: item?.image || '',
+    category: item?.category || 'burgers',
+    isSpecialty: item?.isSpecialty || false
   });
   const [isSaving, setIsSaving] = useState(false);
 
@@ -27,7 +29,7 @@ export default function AdminEditModal({ item, onClose, onSave }: AdminEditModal
     try {
       // Parse price if it's a number-like string
       const priceVal = isNaN(Number(formData.price)) ? formData.price : Number(formData.price);
-      await onSave(item.id, {
+      await onSave(item?.id || null, {
         ...formData,
         price: priceVal
       });
@@ -51,7 +53,9 @@ export default function AdminEditModal({ item, onClose, onSave }: AdminEditModal
       >
         <div className="p-6 border-b border-[#E3D7C8] flex items-center justify-between bg-white">
           <div>
-            <h2 className="font-serif text-2xl font-bold text-[#2D241C]">Edit Menu Item</h2>
+            <h2 className="font-serif text-2xl font-bold text-[#2D241C]">
+              {isAddMode ? 'Add New Menu Item' : 'Edit Menu Item'}
+            </h2>
             <p className="text-[10px] text-[#8C6239] font-mono uppercase tracking-widest font-bold">Admin Workspace</p>
           </div>
           <button onClick={onClose} className="p-2 rounded-full hover:bg-black/5 text-gray-500 transition-colors">
