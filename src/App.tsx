@@ -61,9 +61,22 @@ export default function App() {
   const [editingItem, setEditingItem] = useState<MenuItem | null>(null);
   const [isAddingItem, setIsAddingItem] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
 
   const menuRef = useRef<HTMLElement>(null);
   const shouldScrollRef = useRef(false);
+
+  // Connection Status Tracking
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
 
   // Initial Data Fetch & Seed
   useEffect(() => {
@@ -839,6 +852,21 @@ export default function App() {
               setIsAddingItem(false);
             }}
           />
+        )}
+      </AnimatePresence>
+
+      {/* Offline Status Badge */}
+      <AnimatePresence>
+        {!isOnline && (
+          <motion.div
+            initial={{ y: 50, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: 50, opacity: 0 }}
+            className="fixed bottom-4 left-1/2 -translate-x-1/2 z-[200] px-4 py-2 bg-[#8C6239] text-white rounded-full shadow-2xl flex items-center gap-2 border border-[#E3D7C8]/20"
+          >
+            <div className="w-2 h-2 bg-amber-400 rounded-full animate-pulse" />
+            <span className="text-[10px] font-mono uppercase tracking-widest font-bold">Offline Mode: Menu Cached</span>
+          </motion.div>
         )}
       </AnimatePresence>
 
