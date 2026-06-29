@@ -1,0 +1,6 @@
+{
+  "name": "DUKAMO Coffee",
+  "description": "Interactive premium digital menu and coffee guide for DUKAMO Coffee in Bole, Addis Ababa. Highlights specialty bowls, burgers, single-origin flights, and traditional Bunna experiences.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
