@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Search, ShoppingBag, Clock, MapPin, Coffee, HelpCircle, X } from 'lucide-react';
+import { Search, ShoppingBag, Clock, MapPin, Coffee, HelpCircle, X, Settings } from 'lucide-react';
 import { CategoryType, BasketItem } from '../types';
 
 interface HeaderProps {
@@ -10,6 +10,9 @@ interface HeaderProps {
   setSearchQuery: (query: string) => void;
   basket: BasketItem[];
   onOpenBasket: () => void;
+  isAdmin?: boolean;
+  onOpenAdmin: () => void;
+  onLogoutAdmin: () => void;
 }
 
 export default function Header({
@@ -19,6 +22,9 @@ export default function Header({
   setSearchQuery,
   basket,
   onOpenBasket,
+  isAdmin = false,
+  onOpenAdmin,
+  onLogoutAdmin,
 }: HeaderProps) {
   const [showStory, setShowStory] = useState(false);
   const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
@@ -113,6 +119,15 @@ export default function Header({
             >
               <HelpCircle className="w-4 h-4" />
               <span>Our Story</span>
+            </button>
+
+            {/* Admin Toggle Button */}
+            <button
+              onClick={isAdmin ? onLogoutAdmin : onOpenAdmin}
+              className={`p-2 transition-colors rounded-full ${isAdmin ? 'text-red-600 bg-red-50 shadow-inner' : 'text-[#5C4E43] hover:text-[#8C6239] hover:bg-[#EFE5D9]/60'}`}
+              title={isAdmin ? "Exit Admin Mode (Active)" : "Admin Settings"}
+            >
+              <Settings className={`w-4 h-4 ${isAdmin ? 'animate-spin' : ''}`} style={{ animationDuration: isAdmin ? '3s' : '0s' }} />
             </button>
 
             {/* Mobile Search Toggle Button */}

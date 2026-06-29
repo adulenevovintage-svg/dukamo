@@ -1,16 +1,18 @@
 import { useState } from 'react';
 import { motion } from 'motion/react';
-import { Plus, Coffee, Sparkles, CheckCircle2, ChevronRight } from 'lucide-react';
+import { Plus, Coffee, Sparkles, CheckCircle2, ChevronRight, Pencil } from 'lucide-react';
 import { MenuItem } from '../types';
 
 interface ItemCardProps {
   item: MenuItem;
   onSelectItem: (item: MenuItem, selectedSize?: any) => void;
   onAddToBasket: (item: MenuItem, selectedSize?: any) => void;
+  isAdmin?: boolean;
+  onEdit?: (item: MenuItem) => void;
   key?: string | number;
 }
 
-export default function ItemCard({ item, onSelectItem, onAddToBasket }: ItemCardProps) {
+export default function ItemCard({ item, onSelectItem, onAddToBasket, isAdmin = false, onEdit }: ItemCardProps) {
   const hasMultiplePrices = !!item.prices;
   const [selectedSize, setSelectedSize] = useState<'small' | 'large'>('small');
 
@@ -75,28 +77,28 @@ export default function ItemCard({ item, onSelectItem, onAddToBasket }: ItemCard
       )}
 
       {/* Item Details Container */}
-      <div className="p-5 flex-1 flex flex-col justify-between bg-[#A06603] group-hover:bg-gradient-to-b group-hover:from-[#A06603] group-hover:to-[#A06603]/90 transition-colors duration-300">
+      <div className="p-3 sm:p-5 flex-1 flex flex-col justify-between bg-[#A06603] group-hover:bg-gradient-to-b group-hover:from-[#A06603] group-hover:to-[#A06603]/90 transition-colors duration-300">
         
         {/* Core Info */}
         <div className="cursor-pointer" onClick={() => onSelectItem(item, hasMultiplePrices ? selectedSize : undefined)}>
-          <div className="flex items-start justify-between gap-2 mb-2">
-            <h3 className="font-serif text-lg font-bold text-white group-hover:text-amber-200 transition-colors leading-tight">
+          <div className="flex items-start justify-between gap-2 mb-1.5 sm:mb-2">
+            <h3 className="font-serif text-sm sm:text-lg font-bold text-white group-hover:text-amber-200 transition-colors leading-tight">
               {item.name}
             </h3>
           </div>
           
           {/* Ingredients / Descriptions */}
           {item.ingredients ? (
-            <p className="text-xs text-amber-50/80 line-clamp-2 leading-relaxed mb-4">
+            <p className="text-[10px] sm:text-xs text-amber-50/80 line-clamp-2 leading-relaxed mb-3 sm:mb-4">
               {item.ingredients}
             </p>
           ) : item.description ? (
-            <p className="text-xs text-amber-50/80 line-clamp-2 leading-relaxed mb-4 italic">
+            <p className="text-[10px] sm:text-xs text-amber-50/80 line-clamp-2 leading-relaxed mb-3 sm:mb-4 italic">
               {item.description}
             </p>
           ) : (
-            <p className="text-xs text-amber-50/70 mb-4 italic">
-              Brewed by professional baristas with our Buncho-roasted beans.
+            <p className="text-[10px] sm:text-xs text-amber-50/70 mb-3 sm:mb-4 italic">
+              Brewed by professional baristas.
             </p>
           )}
         </div>
@@ -105,61 +107,74 @@ export default function ItemCard({ item, onSelectItem, onAddToBasket }: ItemCard
         <div>
           {/* Dual Size Selector Option */}
           {hasMultiplePrices && (
-            <div className="flex items-center gap-1.5 mb-3 bg-black/20 p-1 rounded-lg w-fit border border-[#F09F1D]/20">
+            <div className="flex items-center gap-1 mb-2.5 sm:mb-3 bg-black/20 p-0.5 sm:p-1 rounded-lg w-fit border border-[#F09F1D]/20">
               <button
                 type="button"
                 onClick={() => setSelectedSize('small')}
-                className={`px-2.5 py-1 text-[10px] font-mono uppercase rounded transition-all ${
+                className={`px-1.5 sm:px-2.5 py-0.5 sm:py-1 text-[8px] sm:text-[10px] font-mono uppercase rounded transition-all ${
                   selectedSize === 'small'
                     ? 'bg-[#F09F1D] text-white font-bold shadow-sm'
                     : 'text-amber-100 hover:text-white'
                 }`}
               >
-                Standard
+                Std
               </button>
               <button
                 type="button"
                 onClick={() => setSelectedSize('large')}
-                className={`px-2.5 py-1 text-[10px] font-mono uppercase rounded transition-all ${
+                className={`px-1.5 sm:px-2.5 py-0.5 sm:py-1 text-[8px] sm:text-[10px] font-mono uppercase rounded transition-all ${
                   selectedSize === 'large'
                     ? 'bg-[#F09F1D] text-white font-bold shadow-sm'
                     : 'text-amber-100 hover:text-white'
                 }`}
               >
-                Large
+                Lrg
               </button>
             </div>
           )}
 
           {/* Pricing Bottom Row */}
-          <div className="flex items-center justify-between pt-3 border-t border-[#F09F1D]/20">
+          <div className="flex items-center justify-between pt-2.5 sm:pt-3 border-t border-[#F09F1D]/20">
             <div>
-              <p className="text-[10px] font-mono text-amber-200/80 uppercase tracking-widest">Price</p>
-              <p className="text-base font-serif font-bold text-white group-hover:text-amber-200 transition-colors flex items-baseline gap-0.5">
+              <p className="text-[8px] sm:text-[10px] font-mono text-amber-200/80 uppercase tracking-widest">Price</p>
+              <p className="text-sm sm:text-base font-serif font-bold text-white group-hover:text-amber-200 transition-colors flex items-baseline gap-0.5">
                 <span>{activePrice}</span>
-                <span className="text-[10px] font-sans font-semibold text-amber-100/80 tracking-wider">ETB</span>
+                <span className="text-[8px] sm:text-[10px] font-sans font-semibold text-amber-100/80 tracking-wider">ETB</span>
               </p>
             </div>
 
             {/* Quick Add Actions */}
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-1 sm:gap-1.5">
+              {isAdmin && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onEdit?.(item);
+                  }}
+                  className="p-1.5 sm:p-2 bg-white/10 hover:bg-[#F09F1D]/30 text-white rounded-lg transition-all border border-white/10"
+                  title="Admin: Edit Item"
+                >
+                  <Pencil className="w-3 sm:w-3.5 h-3 sm:h-3.5" />
+                </button>
+              )}
+              
               <button
                 onClick={() => onSelectItem(item, hasMultiplePrices ? selectedSize : undefined)}
-                className="p-2 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-all text-xs flex items-center gap-1 font-medium border border-white/10"
+                className="p-1.5 sm:p-2 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-all text-[10px] sm:text-xs flex items-center gap-0.5 sm:gap-1 font-medium border border-white/10"
                 title="View details and customize"
               >
-                <span>Details</span>
-                <ChevronRight className="w-3.5 h-3.5" />
+                <span className="hidden xs:inline">Details</span>
+                <ChevronRight className="w-3 sm:w-3.5 h-3 sm:h-3.5" />
               </button>
 
               <motion.button
                 onClick={() => onAddToBasket(item, hasMultiplePrices ? selectedSize : undefined)}
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                className="p-2 bg-[#F09F1D] hover:bg-[#FAF5EF] hover:text-[#A06603] text-white rounded-lg transition-all flex items-center justify-center font-bold shadow-sm"
+                className="p-1.5 sm:p-2 bg-[#F09F1D] hover:bg-[#FAF5EF] hover:text-[#A06603] text-white rounded-lg transition-all flex items-center justify-center font-bold shadow-sm"
                 title="Add to order calculator"
               >
-                <Plus className="w-4 h-4 font-bold" />
+                <Plus className="w-3.5 sm:w-4 h-3.5 sm:h-4 font-bold" />
               </motion.button>
             </div>
           </div>

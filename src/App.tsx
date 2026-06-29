@@ -16,7 +16,8 @@ import {
 } from 'lucide-react';
 
 import { CategoryType, MenuItem, BasketItem } from './types';
-import { MENU_ITEMS } from './data';
+import { MENU_ITEMS as STATIC_MENU_ITEMS } from './data';
+import { menuService } from './services/menuService';
 
 // Component Imports
 import Header from './components/Header';
@@ -27,6 +28,8 @@ import SlamFlight from './components/SlamFlight';
 import BasketDrawer from './components/BasketDrawer';
 import VibeGallery from './components/VibeGallery';
 import FeedbackBoard from './components/FeedbackBoard';
+import AdminLoginModal from './components/AdminLoginModal';
+import AdminEditModal from './components/AdminEditModal';
 
 // Reusable scroll reveal helper for premium fade & slide-up transitions
 function ScrollReveal({ children, delay = 0 }: { children: React.ReactNode; delay?: number; key?: React.Key }) {
@@ -48,9 +51,44 @@ export default function App() {
   const [selectedItem, setSelectedItem] = useState<{ item: MenuItem; size?: 'small' | 'large' } | null>(null);
   const [basket, setBasket] = useState<BasketItem[]>([]);
   const [isBasketOpen, setIsBasketOpen] = useState<boolean>(false);
+  
+  // Admin & Data State
+  const [menuItems, setMenuItems] = useState<MenuItem[]>(STATIC_MENU_ITEMS);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [isAdminLoginOpen, setIsAdminLoginOpen] = useState(false);
+  const [editingItem, setEditingItem] = useState<MenuItem | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
 
   const menuRef = useRef<HTMLElement>(null);
   const shouldScrollRef = useRef(false);
+
+  // Initial Data Fetch & Seed
+  useEffect(() => {
+    const initData = async () => {
+      try {
+        await menuService.seedData();
+        const items = await menuService.getAllItems();
+        if (items.length > 0) {
+          setMenuItems(items);
+        }
+      } catch (error) {
+        console.error('Failed to sync with Firebase:', error);
+      }
+    };
+    initData();
+  }, []);
+
+  const handleUpdateItem = async (id: string, updates: Partial<MenuItem>) => {
+    try {
+      await menuService.updateItem(id, updates);
+      // Update local state
+      setMenuItems(prev => prev.map(item => item.id === id ? { ...item, ...updates } : item));
+      showToast('Item updated successfully');
+    } catch (error) {
+      showToast('Error updating item');
+      throw error;
+    }
+  };
 
   useEffect(() => {
     if (shouldScrollRef.current) {
@@ -179,7 +217,7 @@ export default function App() {
   };
 
   // Filtering Logic
-  const filteredItems = MENU_ITEMS.filter((item) => {
+  const filteredItems = menuItems.filter((item) => {
     const matchesCategory = activeCategory === 'all' || item.category === activeCategory;
     const matchesSearch = 
       item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -252,6 +290,12 @@ export default function App() {
         setSearchQuery={setSearchQuery}
         basket={basket}
         onOpenBasket={() => setIsBasketOpen(true)}
+        isAdmin={isAdmin}
+        onOpenAdmin={() => setIsAdminLoginOpen(true)}
+        onLogoutAdmin={() => {
+          setIsAdmin(false);
+          showToast('Logged out from admin mode');
+        }}
       />
 
       {/* Hero Visual Block */}
@@ -301,7 +345,12 @@ export default function App() {
           className="space-y-12"
         >
           
-          {filteredItems.length === 0 ? (
+          {isLoading ? (
+            <div className="py-20 text-center">
+              <div className="w-12 h-12 border-4 border-[#8C6239] border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+              <p className="text-sm font-mono text-[#8C6239] uppercase tracking-widest animate-pulse">Loading Sanctuary Menu...</p>
+            </div>
+          ) : filteredItems.length === 0 ? (
             /* No Results fallback */
             <div className="py-20 text-center space-y-4 max-w-md mx-auto">
               <AlertCircle className="w-12 h-12 text-[#8C6239] mx-auto animate-bounce" />
@@ -326,13 +375,15 @@ export default function App() {
                 </div>
               </ScrollReveal>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
                 {filteredItems.map((item, index) => (
                   <ScrollReveal key={item.id} delay={Math.min(index * 0.05, 0.3)}>
                     <ItemCard
                       item={item}
                       onSelectItem={handleSelectItem}
                       onAddToBasket={handleDirectAddToBasket}
+                      isAdmin={isAdmin}
+                      onEdit={setEditingItem}
                     />
                   </ScrollReveal>
                 ))}
@@ -365,13 +416,15 @@ export default function App() {
                     </div>
                   </ScrollReveal>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                  <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
                     {blackCoffees.map((item, index) => (
                       <ScrollReveal key={item.id} delay={Math.min(index * 0.05, 0.3)}>
                         <ItemCard
                           item={item}
                           onSelectItem={handleSelectItem}
                           onAddToBasket={handleDirectAddToBasket}
+                          isAdmin={isAdmin}
+                          onEdit={setEditingItem}
                         />
                       </ScrollReveal>
                     ))}
@@ -402,13 +455,15 @@ export default function App() {
                     </div>
                   </ScrollReveal>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                  <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
                     {milkBased.slice(0, 8).map((item, index) => (
                       <ScrollReveal key={item.id} delay={Math.min(index * 0.05, 0.3)}>
                         <ItemCard
                           item={item}
                           onSelectItem={handleSelectItem}
                           onAddToBasket={handleDirectAddToBasket}
+                          isAdmin={isAdmin}
+                          onEdit={setEditingItem}
                         />
                       </ScrollReveal>
                     ))}
@@ -439,13 +494,15 @@ export default function App() {
                     </div>
                   </ScrollReveal>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                  <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
                     {nonCoffeeTeas.map((item, index) => (
                       <ScrollReveal key={item.id} delay={Math.min(index * 0.05, 0.3)}>
                         <ItemCard
                           item={item}
                           onSelectItem={handleSelectItem}
                           onAddToBasket={handleDirectAddToBasket}
+                          isAdmin={isAdmin}
+                          onEdit={setEditingItem}
                         />
                       </ScrollReveal>
                     ))}
@@ -476,13 +533,15 @@ export default function App() {
                     </div>
                   </ScrollReveal>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                  <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
                     {juices.slice(0, 8).map((item, index) => (
                       <ScrollReveal key={item.id} delay={Math.min(index * 0.05, 0.3)}>
                         <ItemCard
                           item={item}
                           onSelectItem={handleSelectItem}
                           onAddToBasket={handleDirectAddToBasket}
+                          isAdmin={isAdmin}
+                          onEdit={setEditingItem}
                         />
                       </ScrollReveal>
                     ))}
@@ -513,13 +572,15 @@ export default function App() {
                     </div>
                   </ScrollReveal>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                  <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
                     {specialtyBowls.map((item, index) => (
                       <ScrollReveal key={item.id} delay={Math.min(index * 0.05, 0.3)}>
                         <ItemCard
                           item={item}
                           onSelectItem={handleSelectItem}
                           onAddToBasket={handleDirectAddToBasket}
+                          isAdmin={isAdmin}
+                          onEdit={setEditingItem}
                         />
                       </ScrollReveal>
                     ))}
@@ -550,13 +611,15 @@ export default function App() {
                     </div>
                   </ScrollReveal>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 max-w-4xl">
+                  <div className="grid grid-cols-2 gap-4 sm:gap-6 max-w-4xl">
                     {burgers.map((item, index) => (
                       <ScrollReveal key={item.id} delay={Math.min(index * 0.05, 0.3)}>
                         <ItemCard
                           item={item}
                           onSelectItem={handleSelectItem}
                           onAddToBasket={handleDirectAddToBasket}
+                          isAdmin={isAdmin}
+                          onEdit={setEditingItem}
                         />
                       </ScrollReveal>
                     ))}
@@ -587,13 +650,15 @@ export default function App() {
                     </div>
                   </ScrollReveal>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                  <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
                     {signatureSamplers.map((item, index) => (
                       <ScrollReveal key={item.id} delay={Math.min(index * 0.05, 0.3)}>
                         <ItemCard
                           item={item}
                           onSelectItem={handleSelectItem}
                           onAddToBasket={handleDirectAddToBasket}
+                          isAdmin={isAdmin}
+                          onEdit={setEditingItem}
                         />
                       </ScrollReveal>
                     ))}
@@ -713,6 +778,29 @@ export default function App() {
             onRemoveItem={handleRemoveItem}
             onClearBasket={handleClearBasket}
             onUpdateQuantity={handleUpdateQuantity}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Admin Modals */}
+      <AnimatePresence>
+        {isAdminLoginOpen && (
+          <AdminLoginModal
+            onLogin={() => {
+              setIsAdmin(true);
+              showToast('Admin Mode Enabled');
+            }}
+            onClose={() => setIsAdminLoginOpen(false)}
+          />
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {editingItem && (
+          <AdminEditModal
+            item={editingItem}
+            onSave={handleUpdateItem}
+            onClose={() => setEditingItem(null)}
           />
         )}
       </AnimatePresence>
